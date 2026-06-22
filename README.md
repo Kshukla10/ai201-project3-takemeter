@@ -208,6 +208,40 @@ This is a defensible annotation disagreement. The post expresses warm personal f
 
 ---
 
+### Error Pattern Analysis
+
+**Pattern: The model classifies by tone, not by event-specificity — `reaction` posts without emotional language are systematically mislabeled as `hot_take`.**
+
+Across all 9 wrong predictions, 7 involve a `reaction` post being mislabeled. The confusion matrix confirms this directionally: 5 of 10 `reaction` posts were predicted as `hot_take`, the single largest error cluster in the matrix.
+
+The cause is identifiable. The model learned `reaction` as a *tone* — warm, emotional, expressive language — and `hot_take` as a *stance* — short, assertive, no hedging. But the `reaction` label is actually situational: a post made in immediate response to a specific match event, regardless of surface tone. When those two things diverge, the model reliably fails.
+
+**Short factual match observations (true: `reaction`, predicted: `hot_take`):**
+
+| Text | Confidence |
+|------|------------|
+| "You can tell that Curaçao is tired." | 0.37 |
+| "Bless the ref, he's just letting them play." | 0.38 |
+| "15 saves on the night so far is crazy" | 0.36 |
+
+None of these use stereotypically emotional language. Each is a brief, direct observation made during a live match. Without emotional markers, the model sees only a short assertive claim and routes it to `hot_take`.
+
+**The reverse failure — soft tone mislabeled as `reaction`:**
+
+> "I don't think anyone has ever been against cooling breaks if necessary."
+> True: `hot_take` | Predicted: `reaction` | Confidence: 0.35
+
+The hedged phrasing ("I don't think anyone has ever been") reads as low-assertiveness, which the model associates with `reaction`. But the post is making a bold claim about universal consensus with no evidence — a textbook `hot_take`. The tone signal misleads in both directions.
+
+**Why this pattern exists:**
+
+This is a data distribution issue. `Reaction` posts in live match threads are short and observational, but the training examples likely skewed toward the more expressive end (fans cheering, expressing disbelief). The quieter observational reactions were underrepresented, leaving the model without signal for that subtype.
+
+**What would fix it:**
+
+Collecting 20–30 additional `reaction` examples from the short, observational end of the spectrum — factual match comments without exclamation points or emotional vocabulary — would give the model the signal it currently lacks. A label definition that explicitly names "brief factual match observations" as a `reaction` subtype would also reduce annotation inconsistency in future data collection.
+
+---
 ### Sample classifications
 
 | Text | True label | Predicted | Confidence | Notes |

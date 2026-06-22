@@ -1,6 +1,6 @@
 # TakeMeter — r/soccer Discourse Classifier
 
-A fine-tuned text classifier that evaluates discourse quality in r/soccer, distinguishing between analytical posts, hot takes, and emotional reactions.
+A fine-tuned text classifier that evaluates discourse quality in r/soccer, distinguishing between analytical posts, hot takes, and reactions.
 
 ---
 

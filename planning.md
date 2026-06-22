@@ -57,26 +57,51 @@ Little to no argument — the post is expressing a feeling in the moment.
 
 ## Hard Edge Cases
 
-### The one-stat hot take
-**Example post:** "Bellingham has more goal contributions than any English player in
-La Liga history — he's clearly the best English player ever."
+### Case 1 — The reasoned reaction
+**Example post:** "The worst thing VAR has done is make everyone go crazy when fouls 
+aren't given for borderline minimal contact decisions. The first couple of years of VAR 
+they were way too likely to give penalties for microscopic contact on players. Now 
+they're trying to move away from that to make the threshold for contact much higher, 
+which is the right thing to do. They just should have done it this way to start with."
 
-This cites a real stat but uses it to support a sweeping, poorly-reasoned claim.
+Could be `reaction` (expressing frustration about VAR) or `analysis` (makes a structured 
+argument about how VAR policy has evolved).
 
-**Decision rule:** If the evidence genuinely supports the claim (removing it would
-weaken the argument in a meaningful way), label it `analysis`. If the evidence is
-decorative — one cherry-picked number propping up a much larger claim — label it
-`hot_take`. The Bellingham example above is `hot_take`: the stat is real but doesn't
-remotely support "best English player ever."
+**Decision rule:** If the primary purpose is expressing a feeling about a broader 
+frustration, label it `reaction` even if reasoning is present. Reserve `analysis` for 
+posts where the argument is the *point*, backed by verifiable evidence.
+**Decision:** `reaction`
 
-### The calm reaction
-**Example post:** "Gutted by tonight. We've been shipping goals from set pieces all
-season and nobody's fixed it."
+---
 
-This is emotional but also makes a mild tactical observation. Decision rule: if the
-primary purpose is expressing a feeling about a specific event (win, loss, goal,
-transfer news), label it `reaction` even if it contains a passing observation.
-Reserve `analysis` for posts where the argument is the *point* of the post.
+### Case 2 — The tactical observation that reads like a reaction
+**Example post:** "A lot of these matches involve 1 team scoring a few goals in the 
+first half and then parking the bus for 45+ minutes and I'm getting really really 
+tired of it."
+
+Could be `analysis` (tactical observation about match patterns) or `reaction` 
+(expressing fatigue/frustration).
+
+**Decision rule:** If the post identifies a specific pattern across multiple matches 
+grounded in what's happening on the pitch — even without stats — label it `analysis`. 
+If the frustration is the main point, label it `reaction`.
+**Decision:** `analysis`
+
+---
+
+### Case 3 — The opinion backed by a mild stat reference
+**Example post:** "De Jong actually plays a lot of progressive passes though. If someone 
+actually thinks he's not a good player, you should probably disregard their footballing 
+input."
+
+Could be `hot_take` (dismissive, provocative) or a borderline `reaction` (responding 
+to someone else's opinion).
+
+**Decision rule:** If the evidence is vague and the conclusion is dismissive rather 
+than argued, label it `hot_take`. The stat gesture here ("a lot of progressive passes") 
+is not specific enough to qualify as analysis, and the post is not reacting to a match 
+event.
+**Decision:** `hot_take`
 
 ---
 

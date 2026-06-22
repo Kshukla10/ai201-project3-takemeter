@@ -4,7 +4,7 @@
 r/soccer is one of the largest sports communities on Reddit, with millions of members
 discussing matches, transfers, tactics, and player performance across all global leagues.
 The discourse ranges from emotional matchday reactions to detailed tactical breakdowns,
-making it an ideal fit for a classification task — the variation in post quality is high,
+making it an ideal fit for a classification task, the variation in post quality is high,
 the text is abundant, and the distinctions between post types are ones the community
 itself recognizes and talks about explicitly.
 
@@ -45,7 +45,7 @@ It's just pace and physicality, no real tactical sophistication."
 
 ### reaction
 An immediate emotional response to a specific match event, result, or piece of news.
-Little to no argument — the post is expressing a feeling in the moment.
+Little to no argument, the post is expressing a feeling in the moment.
 
 **Example 1:**
 "I cannot believe we just conceded in the 94th minute. This club will actually kill me."
@@ -152,7 +152,7 @@ distinction that matters most — that would be a failure even at acceptable ove
 
 ### Label stress-testing
 I'll give Claude my label definitions and edge case descriptions and ask it to generate
-10 posts that sit at the boundary between `analysis` and `hot_take` — the hardest
+10 posts that sit at the boundary between `analysis` and `hot_take`, the hardest
 boundary in this taxonomy. If I can't cleanly classify the generated posts, I'll
 tighten the definitions before annotating 200 examples.
 

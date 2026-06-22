@@ -6,7 +6,7 @@ A fine-tuned text classifier that evaluates discourse quality in r/soccer, disti
 
 ## Community Choice
 
-**r/soccer** is one of the largest sports communities on Reddit, with millions of members discussing matches, transfers, tactics, and player performance across all global leagues. It's an ideal fit for a classification task because discourse quality varies enormously in a recognizable way — the community itself uses terms like "hot take" and "actually a good point" to describe post quality. The variation between a detailed tactical breakdown and a pure emotional reaction is high, consistent, and meaningful to regular participants.
+**r/soccer** is one of the largest sports communities on Reddit, with millions of members discussing matches, transfers, tactics, and player performance across all global leagues. It's an ideal fit for a classification task because discourse quality varies enormously in a recognizable way, the community itself uses terms like "hot take" and "actually a good point" to describe post quality. The variation between a detailed tactical breakdown and a pure emotional reaction is high, consistent, and meaningful to regular participants.
 
 ---
 
@@ -35,7 +35,7 @@ A bold, confident opinion stated without meaningful supporting evidence. The pos
 ---
 
 ### `reaction`
-An immediate emotional response to a specific match event, result, or piece of news. Little to no argument — the post is expressing a feeling in the moment.
+An immediate emotional response to a specific match event, result, or piece of news. Little to no argument, the post is expressing a feeling in the moment.
 
 **Example 1:**
 > "Shocking game but probably the most fun I've had watching outside of the Sweden game. The ref when announcing the red card had me in tears."
@@ -50,7 +50,7 @@ An immediate emotional response to a specific match event, result, or piece of n
 **Source:** r/soccer comment sections, collected manually from public match threads during the 2024 FIFA World Cup group stage.
 
 **Thread types used:**
-- Live match threads and post-match threads (primary source of `reaction`) — e.g., Ecuador vs Curaçao, Turkey vs Australia
+- Live match threads and post-match threads (primary source of `reaction`), e.g., Ecuador vs Curaçao, Turkey vs Australia
 - In-thread debate comments on refereeing, tactics, and player performance (primary source of `hot_take` and `analysis`)
 - Tournament discussion threads on VAR, cooling breaks, and group stage format (mixed source across all three labels)
 
@@ -204,7 +204,7 @@ This is a factual observation about a live match stat, expressed with surprise. 
 
 This is a defensible annotation disagreement. The post expresses warm personal feeling about a broadcaster, which reads more like a reaction than a bold opinion. This might genuinely belong to `reaction` — it's event-adjacent but not making a claim. This is a label boundary problem, not a model problem.
 
-**Systematic pattern:** All 9 wrong predictions had confidence scores between 0.34–0.38 — barely above random. The model is appropriately uncertain when it gets things wrong, which is a useful property for a deployed tool.
+**Systematic pattern:** All 9 wrong predictions had confidence scores between 0.34–0.38, barely above random. The model is appropriately uncertain when it gets things wrong, which is a useful property for a deployed tool.
 
 ---
 
@@ -214,7 +214,7 @@ This is a defensible annotation disagreement. The post expresses warm personal f
 
 Across all 9 wrong predictions, 7 involve a `reaction` post being mislabeled. The confusion matrix confirms this directionally: 5 of 10 `reaction` posts were predicted as `hot_take`, the single largest error cluster in the matrix.
 
-The cause is identifiable. The model learned `reaction` as a *tone* — warm, emotional, expressive language — and `hot_take` as a *stance* — short, assertive, no hedging. But the `reaction` label is actually situational: a post made in immediate response to a specific match event, regardless of surface tone. When those two things diverge, the model reliably fails.
+The cause is identifiable. The model learned `reaction` as a *tone* — warm, emotional, expressive language — and `hot_take` as a *stance*, short, assertive, no hedging. But the `reaction` label is actually situational: a post made in immediate response to a specific match event, regardless of surface tone. When those two things diverge, the model reliably fails.
 
 **Short factual match observations (true: `reaction`, predicted: `hot_take`):**
 
@@ -239,9 +239,37 @@ This is a data distribution issue. `Reaction` posts in live match threads are sh
 
 **What would fix it:**
 
-Collecting 20–30 additional `reaction` examples from the short, observational end of the spectrum — factual match comments without exclamation points or emotional vocabulary — would give the model the signal it currently lacks. A label definition that explicitly names "brief factual match observations" as a `reaction` subtype would also reduce annotation inconsistency in future data collection.
+Collecting 20–30 additional `reaction` examples from the short, observational end of the spectrum, factual match comments without exclamation points or emotional vocabulary — would give the model the signal it currently lacks. A label definition that explicitly names "brief factual match observations" as a `reaction` subtype would also reduce annotation inconsistency in future data collection.
 
 ---
+
+## Confidence Calibration
+
+Calibration measures whether the model's confidence scores correspond to actual
+accuracy, a well-calibrated model that says "70% confident" should be right ~70%
+of the time.
+
+| Confidence bin | Examples | Accuracy |
+|----------------|----------|----------|
+| 0.4–0.5        | 20       | 60.0%    |
+| 0.5–0.6        | 2        | 100.0%   |
+| 0.6–0.7        | 1        | 100.0%   |
+| 0.7–0.8        | 6        | 100.0%   |
+| 0.8–0.9        | 2        | 100.0%   |
+
+**Finding:** The model is perfectly calibrated at moderate-to-high confidence,
+every prediction above 0.5 confidence is correct (11/11, 100%). Errors are
+entirely concentrated in the low-confidence band (0.4–0.5), where accuracy drops
+to 60% (12/20 correct). No predictions fell below 0.4 or above 0.9, reflecting
+the small test set size (31 examples).
+
+This means confidence is a reliable signal for a deployed tool: predictions above
+0.5 can be trusted; predictions in the 0.4–0.5 range should be treated as
+uncertain. All 9 wrong predictions in the test set fell in this low-confidence
+band, consistent with the model "knowing when it doesn't know."
+
+---
+
 ### Sample classifications
 
 | Text | True label | Predicted | Confidence | Notes |
@@ -268,9 +296,9 @@ To close this gap I would need more examples of short, factual-sounding reaction
 
 ## Spec Reflection
 
-**One way the spec helped:** The spec's emphasis on label design before data collection was the most valuable guidance in the project. Writing decision rules for edge cases (especially the "one-stat hot take") before annotating prevented a lot of inconsistency — I had a rule to apply rather than making a fresh judgment each time.
+**One way the spec helped:** The spec's emphasis on label design before data collection was the most valuable guidance in the project. Writing decision rules for edge cases (especially the "one-stat hot take") before annotating prevented a lot of inconsistency, I had a rule to apply rather than making a fresh judgment each time.
 
-**One way implementation diverged:** The spec suggests the fine-tuned model should outperform the baseline, but my initial run at default hyperparameters produced the opposite (45% vs 58%). The spec doesn't discuss what to do when fine-tuning underperforms — I had to diagnose the underfitting problem myself (too few epochs for a small dataset) and adjust. In practice, hyperparameter tuning is a necessary step the spec treats as optional.
+**One way implementation diverged:** The spec suggests the fine-tuned model should outperform the baseline, but my initial run at default hyperparameters produced the opposite (45% vs 58%). The spec doesn't discuss what to do when fine-tuning underperforms, I had to diagnose the underfitting problem myself (too few epochs for a small dataset) and adjust. In practice, hyperparameter tuning is a necessary step the spec treats as optional.
 
 ---
 

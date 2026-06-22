@@ -16,10 +16,10 @@ A fine-tuned text classifier that evaluates discourse quality in r/soccer, disti
 A structured argument supported by specific evidence: statistics, tactical observations, historical comparisons, or detailed reasoning. The claim could be evaluated as true or false based on the evidence provided.
 
 **Example 1:**
-> "Trent's defensive numbers have actually improved — his duel success rate went from 41% in 2021 to 58% this season, which tracks with Liverpool shifting to a back 4 that covers his runs better."
+> "For this World Cup they made head to head the first tiebreaker over goal differential. If they beat the US, they'll have 3 points, as will the loser of Australia-Paraguay (if no draw). But both Paraguay and Australia hold the head to head tiebreaker over Türkiye. So they have no route to finishing higher than dead last even if they beat the US 15–0."
 
 **Example 2:**
-> "People forget that Ancelotti has won the CL with three different clubs using completely different systems. His tactical flexibility is genuinely underrated — the 2022 Madrid side ran more counter-press than any of his previous CL winners."
+> "He does have a wide passing range but he doesn't spam long passes or through balls especially when he plays as a 6. He focuses more on retention, short passes and passing it into space for the other player to progress the ball."
 
 ---
 
@@ -27,10 +27,10 @@ A structured argument supported by specific evidence: statistics, tactical obser
 A bold, confident opinion stated without meaningful supporting evidence. The post asserts rather than argues. May feel provocative or designed to spark debate.
 
 **Example 1:**
-> "Haaland would be exposed in La Liga. He only scores because City create 40 chances a game. Put him at Atletico and he disappears."
+> "God i cant stand steve clarke, this team selection is pants."
 
 **Example 2:**
-> "The Premier League is genuinely the worst top league for actual football quality. It's just pace and physicality, no real tactical sophistication."
+> "Even if Curacao had one man less, Ecuador would not score."
 
 ---
 
@@ -38,21 +38,21 @@ A bold, confident opinion stated without meaningful supporting evidence. The pos
 An immediate emotional response to a specific match event, result, or piece of news. Little to no argument — the post is expressing a feeling in the moment.
 
 **Example 1:**
-> "I cannot believe we just conceded in the 94th minute. This club will actually kill me."
+> "Shocking game but probably the most fun I've had watching outside of the Sweden game. The ref when announcing the red card had me in tears."
 
 **Example 2:**
-> "THAT BELLINGHAM GOAL. INSANE. ONE OF THE BEST IN UCL HISTORY."
+> "Incredible. Fans and manager crying. This is what tournament ball is about."
 
 ---
 
 ## Data Collection
 
-**Source:** r/soccer comment sections, collected manually from public threads.
+**Source:** r/soccer comment sections, collected manually from public match threads during the 2024 FIFA World Cup group stage.
 
 **Thread types used:**
-- Match threads and post-match threads (primary source of `reaction`)
-- "Unpopular opinion" and player debate threads (primary source of `hot_take`)
-- Tactical discussion posts and long-form analysis threads (primary source of `analysis`)
+- Live match threads and post-match threads (primary source of `reaction`) — e.g., Ecuador vs Curaçao, Turkey vs Australia
+- In-thread debate comments on refereeing, tactics, and player performance (primary source of `hot_take` and `analysis`)
+- Tournament discussion threads on VAR, cooling breaks, and group stage format (mixed source across all three labels)
 
 **Labeling process:** Each comment was read individually and assigned one label using the decision tree: (1) Is this reacting to a specific event? → `reaction`. (2) Does it cite specific supporting evidence? → `analysis`. (3) Otherwise → `hot_take`.
 
@@ -212,10 +212,10 @@ This is a defensible annotation disagreement. The post expresses warm personal f
 
 | Text | True label | Predicted | Confidence | Notes |
 |------|------------|-----------|------------|-------|
-| "Trent's defensive numbers have actually improved — his duel success rate went from 41% in 2021 to 58% this season..." | analysis | analysis | 0.91 | Correct — specific stats + tactical reasoning clearly signal analysis |
-| "Mbappe would never survive the Premier League, he's never played against real physicality" | hot_take | hot_take | 0.84 | Correct — bold claim, zero evidence |
-| "I cannot believe we just conceded in the 94th minute. This club will actually kill me." | reaction | reaction | 0.88 | Correct — clear emotional response to a specific match moment |
-| "There's Room but not for Ecuador." | reaction | hot_take | 0.38 | Wrong — context-dependent match comment misread as opinion |
+| "2 games, 61 shots, 0 goals." | analysis | analysis | — | Correct — concise stat-based observation, model correctly identifies factual evidence |
+| "God i cant stand steve clarke, this team selection is pants." | hot_take | hot_take | — | Correct — bold opinion, no supporting evidence, clear assertive tone |
+| "Incredible. Fans and manager crying. This is what tournament ball is about." | reaction | reaction | — | Correct — pure emotional response to a match moment, no argument made |
+| "There's Room but not for Ecuador." | reaction | hot_take | 0.38 | Wrong — context-dependent match comment misread as opinion without thread context |
 | "15 saves on the night so far is crazy" | reaction | hot_take | 0.36 | Wrong — mid-match stat observation misread as hot take |
 
 ---

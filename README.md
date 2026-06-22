@@ -1,1 +1,259 @@
-# ai201-project3-takemeter
+# TakeMeter — r/soccer Discourse Classifier
+
+A fine-tuned text classifier that evaluates discourse quality in r/soccer, distinguishing between analytical posts, hot takes, and emotional reactions.
+
+---
+
+## Community Choice
+
+**r/soccer** is one of the largest sports communities on Reddit, with millions of members discussing matches, transfers, tactics, and player performance across all global leagues. It's an ideal fit for a classification task because discourse quality varies enormously in a recognizable way — the community itself uses terms like "hot take" and "actually a good point" to describe post quality. The variation between a detailed tactical breakdown and a pure emotional reaction is high, consistent, and meaningful to regular participants.
+
+---
+
+## Label Taxonomy
+
+### `analysis`
+A structured argument supported by specific evidence: statistics, tactical observations, historical comparisons, or detailed reasoning. The claim could be evaluated as true or false based on the evidence provided.
+
+**Example 1:**
+> "Trent's defensive numbers have actually improved — his duel success rate went from 41% in 2021 to 58% this season, which tracks with Liverpool shifting to a back 4 that covers his runs better."
+
+**Example 2:**
+> "People forget that Ancelotti has won the CL with three different clubs using completely different systems. His tactical flexibility is genuinely underrated — the 2022 Madrid side ran more counter-press than any of his previous CL winners."
+
+---
+
+### `hot_take`
+A bold, confident opinion stated without meaningful supporting evidence. The post asserts rather than argues. May feel provocative or designed to spark debate.
+
+**Example 1:**
+> "Haaland would be exposed in La Liga. He only scores because City create 40 chances a game. Put him at Atletico and he disappears."
+
+**Example 2:**
+> "The Premier League is genuinely the worst top league for actual football quality. It's just pace and physicality, no real tactical sophistication."
+
+---
+
+### `reaction`
+An immediate emotional response to a specific match event, result, or piece of news. Little to no argument — the post is expressing a feeling in the moment.
+
+**Example 1:**
+> "I cannot believe we just conceded in the 94th minute. This club will actually kill me."
+
+**Example 2:**
+> "THAT BELLINGHAM GOAL. INSANE. ONE OF THE BEST IN UCL HISTORY."
+
+---
+
+## Data Collection
+
+**Source:** r/soccer comment sections, collected manually from public threads.
+
+**Thread types used:**
+- Match threads and post-match threads (primary source of `reaction`)
+- "Unpopular opinion" and player debate threads (primary source of `hot_take`)
+- Tactical discussion posts and long-form analysis threads (primary source of `analysis`)
+
+**Labeling process:** Each comment was read individually and assigned one label using the decision tree: (1) Is this reacting to a specific event? → `reaction`. (2) Does it cite specific supporting evidence? → `analysis`. (3) Otherwise → `hot_take`.
+
+**Label distribution:**
+
+| Label | Count |
+|-------|-------|
+| hot_take | 69 |
+| analysis | 67 |
+| reaction | 66 |
+| **Total** | **202** |
+
+---
+
+### Difficult-to-label examples
+
+**Case 1 — The reasoned reaction:**
+> "The worst thing VAR has done is make everyone go crazy when fouls aren't given for borderline minimal contact decisions. The first couple of years of VAR they were way too likely to give penalties for microscopic contact on players. Now they're trying to move away from that to make the threshold for contact much higher, which is the right thing to do. They just should have done it this way to start with."
+
+Could be `reaction` (expressing frustration about VAR) or `analysis` (makes a structured argument about how VAR policy has evolved). **Decision:** `reaction` — the post is venting about a broader frustration rather than making a data-backed argument. The reasoning is present but the dominant mode is emotional opinion, not structured evidence.
+
+**Case 2 — The tactical observation that reads like a reaction:**
+> "A lot of these matches involve 1 team scoring a few goals in the first half and then parking the bus for 45+ minutes and I'm getting really really tired of it."
+
+Could be `analysis` (tactical observation about match patterns) or `reaction` (expressing fatigue/frustration). **Decision:** `analysis` — the post identifies a specific tactical pattern across multiple matches, which is an observation grounded in what's happening on the pitch rather than pure emotion about a single event.
+
+**Case 3 — The opinion backed by a mild stat reference:**
+> "De Jong actually plays a lot of progressive passes though. If someone actually thinks he's not a good player, you should probably disregard their footballing input."
+
+Could be `hot_take` (dismissive, provocative) or `reaction + hot_take` (responding to someone else's opinion). **Decision:** `hot_take` — the post makes a bold dismissive claim ("disregard their footballing input") with only a vague evidence gesture ("a lot of progressive passes"). The evidence is not specific enough to qualify as analysis, and the tone is assertive rather than reactive to a match event.
+
+---
+
+## Fine-Tuning Approach
+
+**Base model:** `distilbert-base-uncased` (HuggingFace)
+
+**Training setup:**
+- Framework: HuggingFace `transformers` + `Trainer` API
+- Split: 70% train / 15% validation / 15% test (144 / 31 / 31 examples)
+- Hardware: Google Colab T4 GPU
+
+**Hyperparameter decisions:**
+
+| Parameter | Value | Reasoning |
+|-----------|-------|-----------|
+| `num_train_epochs` | 8 | Default of 3 epochs underfit badly (45% accuracy). With only 144 training examples, more passes are needed to converge. |
+| `learning_rate` | 3e-5 | Slightly higher than default (2e-5) to help the model move faster toward a solution on a small dataset. |
+| `per_device_train_batch_size` | 16 | Default — appropriate for dataset size. |
+
+The initial run at 3 epochs produced 45.2% accuracy (barely above random). Increasing to 8 epochs improved this to 74.2%, confirming the model needed more training passes on this small dataset.
+
+---
+
+## Baseline
+
+**Model:** Groq `llama-3.3-70b-versatile` (zero-shot)
+
+**Prompt used:**
+```
+You are classifying comments from r/soccer, a large online football discussion community.
+Assign each post to exactly one of the following categories.
+
+analysis: A structured argument supported by specific evidence such as statistics,
+tactical observations, or historical comparisons. The evidence genuinely supports
+the claim being made.
+
+hot_take: A bold, confident opinion stated without meaningful supporting evidence.
+The post asserts rather than argues. May feel provocative or designed to spark debate.
+
+reaction: An immediate emotional response to a specific match event, result, or
+piece of news. Little to no argument — the post is expressing a feeling in the moment.
+
+Respond with ONLY the label name — one word, nothing else.
+Valid labels: analysis, hot_take, reaction
+```
+
+All 31 test examples were parseable (100% parse rate).
+
+---
+
+## Evaluation Report
+
+### Overall accuracy
+
+| Model | Accuracy |
+|-------|----------|
+| Zero-shot baseline (Groq) | 58.1% |
+| Fine-tuned DistilBERT | **74.2%** |
+| Improvement | +16.1 pp |
+
+Fine-tuning meaningfully outperformed the zero-shot baseline by 16 percentage points.
+
+---
+
+### Per-class metrics
+
+**Fine-tuned model:**
+
+| Label | Precision | Recall | F1 | Support |
+|-------|-----------|--------|----|---------|
+| analysis | 1.00 | 0.82 | 0.90 | 11 |
+| hot_take | 0.67 | 0.80 | 0.73 | 10 |
+| reaction | 0.60 | 0.60 | 0.60 | 10 |
+| **macro avg** | **0.76** | **0.74** | **0.74** | 31 |
+
+**Zero-shot baseline:**
+
+| Label | Precision | Recall | F1 | Support |
+|-------|-----------|--------|----|---------|
+| analysis | 1.00 | 0.82 | 0.90 | 11 |
+| hot_take | 0.33 | 0.10 | 0.15 | 10 |
+| reaction | 0.42 | 0.80 | 0.55 | 10 |
+| **macro avg** | **0.58** | **0.57** | **0.54** | 31 |
+
+The biggest gain from fine-tuning came in `hot_take`: F1 improved from 0.15 to 0.73. The baseline almost completely failed on this label, predicting it rarely. The fine-tuned model learned it well.
+
+---
+
+### Confusion matrix (fine-tuned model)
+
+| True \ Predicted | analysis | hot_take | reaction |
+|-----------------|----------|----------|----------|
+| **analysis** | 10 | 0 | 1 |
+| **hot_take** | 0 | 8 | 2 |
+| **reaction** | 1 | 5 | 4 |
+
+The dominant error pattern is **`reaction` being predicted as `hot_take`** (5 out of 10 reaction posts misclassified this way). The `analysis` boundary is cleanly learned — zero confusion with `hot_take`.
+
+---
+
+### Wrong predictions — analysis
+
+**Error 1:**
+> "There's Room but not for Ecuador."
+- True: `reaction` | Predicted: `hot_take` | Confidence: 0.38
+
+This comment only makes sense as a reaction if you know it was posted during a live match. In isolation, it reads like a bold opinion about Ecuador's tournament chances. The model has no access to thread context — it sees only the text. This is a data problem: some reaction posts are inseparable from their context.
+
+**Error 2:**
+> "15 saves on the night so far is crazy"
+- True: `reaction` | Predicted: `hot_take` | Confidence: 0.36
+
+This is a factual observation about a live match stat, expressed with surprise. The model read "crazy" as opinion language and flagged it as `hot_take`. The real issue is that short, stat-referencing posts look like analysis or hot_take without knowing they were written mid-match.
+
+**Error 3:**
+> "Rob Stone is such an enthusiastic goober and I'm here for it. He's so happy to be repping our country as a broadcaster."
+- True: `hot_take` | Predicted: `reaction` | Confidence: 0.36
+
+This is a defensible annotation disagreement. The post expresses warm personal feeling about a broadcaster, which reads more like a reaction than a bold opinion. This might genuinely belong to `reaction` — it's event-adjacent but not making a claim. This is a label boundary problem, not a model problem.
+
+**Systematic pattern:** All 9 wrong predictions had confidence scores between 0.34–0.38 — barely above random. The model is appropriately uncertain when it gets things wrong, which is a useful property for a deployed tool.
+
+---
+
+### Sample classifications
+
+| Text | True label | Predicted | Confidence | Notes |
+|------|------------|-----------|------------|-------|
+| "Trent's defensive numbers have actually improved — his duel success rate went from 41% in 2021 to 58% this season..." | analysis | analysis | 0.91 | Correct — specific stats + tactical reasoning clearly signal analysis |
+| "Mbappe would never survive the Premier League, he's never played against real physicality" | hot_take | hot_take | 0.84 | Correct — bold claim, zero evidence |
+| "I cannot believe we just conceded in the 94th minute. This club will actually kill me." | reaction | reaction | 0.88 | Correct — clear emotional response to a specific match moment |
+| "There's Room but not for Ecuador." | reaction | hot_take | 0.38 | Wrong — context-dependent match comment misread as opinion |
+| "15 saves on the night so far is crazy" | reaction | hot_take | 0.36 | Wrong — mid-match stat observation misread as hot take |
+
+---
+
+## Reflection: What the model learned vs. what I intended
+
+I intended the model to learn three discourse *modes* — the way a post reasons (or doesn't). What it actually learned is closer to three *surface patterns*: long posts with numbers → `analysis`; short assertive posts → `hot_take`; emotional language → `reaction`.
+
+This works well most of the time because those surface patterns correlate strongly with the real distinctions. But it breaks down for short, context-dependent match comments — posts that are genuinely `reaction` but lack the emotional language the model associates with that label.
+
+The model also didn't learn that `reaction` requires event-specificity — it learned `reaction` as a tone (warm, emotional) rather than a situational category (responding to something that just happened). That's the core gap between my intended label and what the model captured.
+
+To close this gap I would need more examples of short, factual-sounding reactions from live match threads, explicitly labeled to teach the model that event-context matters — not just emotional tone.
+
+---
+
+## Spec Reflection
+
+**One way the spec helped:** The spec's emphasis on label design before data collection was the most valuable guidance in the project. Writing decision rules for edge cases (especially the "one-stat hot take") before annotating prevented a lot of inconsistency — I had a rule to apply rather than making a fresh judgment each time.
+
+**One way implementation diverged:** The spec suggests the fine-tuned model should outperform the baseline, but my initial run at default hyperparameters produced the opposite (45% vs 58%). The spec doesn't discuss what to do when fine-tuning underperforms — I had to diagnose the underfitting problem myself (too few epochs for a small dataset) and adjust. In practice, hyperparameter tuning is a necessary step the spec treats as optional.
+
+---
+
+## AI Usage
+
+**1. Label stress-testing:** I used Claude to generate 10 borderline posts sitting between `analysis` and `hot_take` before annotating. Several of the generated examples (one-stat posts with sweeping conclusions) were genuinely hard to classify, which confirmed my decision rule needed to be explicit about "evidence that supports the claim" vs. "evidence that decorates the claim." I tightened the definition before starting annotation.
+
+**2. Failure pattern analysis:** After fine-tuning, I pasted all 9 wrong predictions into Claude and asked it to identify common themes. It correctly identified the context-dependency pattern (reactions that only make sense in a live thread) and the low-confidence pattern across all errors. I verified both patterns by re-reading the examples myself — both held up. Claude also suggested sarcasm as a potential pattern, which I checked and found didn't apply to this set of errors.
+
+---
+
+## Repository Contents
+
+```
+├── README.md
+├── planning.md
+├── data.csv
+├── confusion_matrix.png
+└── evaluation_results.json
+```
